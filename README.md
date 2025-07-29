@@ -1,194 +1,279 @@
 # Système de Gestion des Autorisations d'Absence
 
-Ce script Google Apps Script permet d'automatiser le processus de demande et de validation des autorisations d'absence au sein d'une organisation.
+Ce script Google Apps Script permet d'automatiser le processus de demande et de validation des autorisations d'absence au sein d'une organisation avec une architecture modulaire et sécurisée.
 
-## Fonctionnalités
+## 🚀 Fonctionnalités
 
-- **Traitement des soumissions de formulaire** pour les demandes d'absence
-- **Flux de validation à plusieurs niveaux** (Supérieur Hiérarchique → RH → Présidence)
-- **Génération automatique de documents** basés sur un modèle
-- **Organisation des fichiers** dans Google Drive (par année, par employé, et par statut)
-- **Notifications par email** à chaque étape du processus
-- **Protection des décisions** une fois prises
-- **Traçabilité complète** avec journalisation des actions
+- **Traitement automatique** des soumissions de formulaire Google Forms
+- **Flux de validation en cascade** (Supérieur Hiérarchique → RH → Présidence)
+- **Génération automatique de documents** basés sur un modèle avec placeholders
+- **Organisation intelligente des fichiers** dans Google Drive (par année, employé, et statut)
+- **Notifications email professionnelles** avec boutons d'action
+- **Protection avancée** des décisions et de la feuille de calcul
+- **Métadonnées automatiques** en arrière-plan (invisibles à l'utilisateur)
+- **Traçabilité complète** avec journalisation détaillée
 
-## Prérequis
+## 📋 Prérequis
 
-- Un formulaire Google Forms pour la soumission des demandes d'absence
-- Une feuille de calcul Google Sheets liée au formulaire
-- Un document modèle Google Docs avec des placeholders
-- Les dossiers Google Drive suivants:
-  - Dossier principal (ID: `1H5GtauuqauEf_Ze4ZQ3kkoNEgyDJLsRw`)
-  - Dossier des employés (ID: `1D3xmuzg4jN9kfr_pfBly1E2fuaEO2-nO`)
-  - Document modèle (ID: `1b_RRz7ie06UHuhfB4_5Sqeh33yhAD8gWeYVaAjrnz94`)
+- Formulaire Google Forms pour les demandes d'absence
+- Feuille de calcul Google Sheets liée au formulaire
+- Document modèle Google Docs avec placeholders
+- Structure de dossiers Google Drive
 
-## Configuration
+## 🏗️ Architecture du Code
 
-Avant utilisation, vous devez configurer:
+Le système est organisé en **3 fichiers modulaires** pour une maintenance facile :
 
-1. Les adresses email pour les notifications:
-   ```javascript
-   var emailRH = "@gmail.com"; // À remplacer par l'email RH réel
-   var emailPresidence = "@gmail.com"; // À remplacer par l'email de la présidence
-   ```
+### 📁 **Config.gs** - Configuration et utilitaires
+- Configuration centralisée (emails, dossiers)
+- Fonctions utilitaires réutilisables
+- Gestion de la protection de la feuille
+- Gestion des documents et dossiers
 
-2. Vérifier que les IDs des dossiers correspondent à votre structure Drive:
-   ```javascript
-   var mainFolderId = "1H5GtauuqauEf_Ze4ZQ3kkoNEgyDJLsRw"; // ID du dossier principal
-   var employeeFolderId = "1D3xmuzg4jN9kfr_pfBly1E2fuaEO2-nO"; // ID du dossier des employés
-   var templateDocId = "1b_RRz7ie06UHuhfB4_5Sqeh33yhAD8gWeYVaAjrnz94"; // ID du modèle de document
-   ```
+### 📧 **EmailService.gs** - Gestion des emails
+- Service orienté objet pour les notifications
+- Templates d'emails professionnels avec signatures
+- Gestion de la chaîne de validation
+- Fonctions de compatibilité
 
-## Structure du document modèle
+### ⚙️ **Main.gs** - Workflow principal
+- Traitement des soumissions de formulaire
+- Logique de validation et approbation
+- Gestion des rejets et approbations
+- Fonction d'initialisation
 
-Le document modèle doit contenir les placeholders suivants:
-- `{{matricule}}`
-- `{{nom}}`
-- `{{prenom}}`
+## ⚙️ Configuration
+
+### 1. Configuration des emails et dossiers
+
+Dans **Config.gs**, modifiez la section CONFIG :
+
+```javascript
+const CONFIG = {
+  emails: {
+    rh: "rh@entreprise.com",                    // Email du service RH
+    presidence: ["president@entreprise.com", "directeur@entreprise.com"] // Emails présidence (2 max)
+  },
+  folders: {
+    mainId: "VOTRE_ID_DOSSIER_PRINCIPAL",      // ID dossier principal Google Drive
+    employeeId: "VOTRE_ID_DOSSIER_EMPLOYES",   // ID dossier des employés
+    templateId: "VOTRE_ID_TEMPLATE_DOCUMENT"   // ID du document modèle
+  }
+};
+```
+
+### 2. Personnalisation des signatures email
+
+Dans **EmailService.gs**, modifiez la fonction `getSignatures()` :
+
+```javascript
+validation: `
+  <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+    <p style="margin: 5px 0; color: #666; font-size: 13px;">
+      <strong>VOTRE ENTREPRISE</strong><br>
+      Service Ressources Humaines<br>
+      📧 rh@votre-entreprise.com | 📞 +XXX XX XXX XX XX<br>
+      🏢 Votre adresse
+    </p>
+  </div>
+`
+```
+
+## 📄 Structure du Document Modèle
+
+Le document modèle doit contenir ces placeholders :
+
+**Informations employé :**
+- `{{matricule}}`, `{{nom}}`, `{{prenom}}`
 - `{{serviceFonction}}`
-- `{{typeAbsence}}`
-- `{{dateDebut}}`
-- `{{heureDebut}}`
-- `{{dateFin}}`
-- `{{heureFin}}`
-- `{{motifAbsence}}`
-- `{{typePermission}}`
-- `{{motifPermission}}`
-- `{{nbreJours}}`
-- `{{statusSuperieurHierachique}}`
+
+**Détails de l'absence :**
+- `{{typeAbsence}}`, `{{dateDebut}}`, `{{heureDebut}}`
+- `{{dateFin}}`, `{{heureFin}}`, `{{nbreJours}}`
+- `{{motifAbsence}}`, `{{typePermission}}`, `{{motifPermission}}`
+
+**Statuts de validation :**
+- `{{statusSuperieurHierarchique}}`
 - `{{statusRH}}`
 - `{{statusPresidence}}`
-- `{{commentairePresidence}}`
 
-## Structure de la feuille de calcul
+## 📊 Structure de la Feuille de Calcul
 
-La feuille de calcul doit avoir la structure suivante:
-1. Les colonnes 1-16 contiennent les données du formulaire
-2. Colonne 17: Validation du Supérieur Hiérarchique
-3. Colonne 18: Validation RH
-4. Colonne 19: Validation Présidence
-5. Colonne 20: Commentaire Présidence
-6. Colonne 21: ID du document généré
-7. Colonne 22: Email RH
-8. Colonne 23: Email Présidence
+| Colonne | Contenu | Description |
+|---------|---------|-------------|
+| A-P (1-16) | Données formulaire | Informations saisies par l'employé |
+| Q (17) | Validation Supérieur | "Favorable" ou "Non Favorable" |
+| R (18) | Validation RH | "Favorable" ou "Non Favorable" |
+| S (19) | Validation Présidence | "Favorable" ou "Non Favorable" |
+| T (20) | Commentaire Présidence | Commentaire optionnel |
+| U-Y (21-25) | **Métadonnées cachées** | ID document, emails, timestamps |
 
-## Organisation des dossiers
+> **Note :** Seules les colonnes Q, R, S sont modifiables par les utilisateurs.
 
-Le script crée automatiquement une structure de dossiers organisée:
+## 📁 Organisation Automatique des Dossiers
+
 ```
-Dossier principal
-└── Dossier des employés
+Dossier Principal
+└── Dossier des Employés
     └── Autorisation d'absence - [ANNÉE]
-        └── [NOM PRÉNOM]
-            ├── En Attente/
-            ├── Validée/
-            └── Rejetée/
+        └── [PRÉNOM NOM]
+            ├── En Attente/     (demandes en cours)
+            ├── Validée/        (demandes approuvées)
+            └── Rejetée/        (demandes refusées)
 ```
 
-## Déploiement
+## 🔧 Déploiement
 
-1. Ouvrez votre feuille de calcul Google Sheets liée au formulaire
-2. Allez dans Extensions > Apps Script
-3. Copiez et collez l'intégralité du code dans l'éditeur de script
-4. Sauvegardez le projet
-5. Configurez les déclencheurs:
-   - `onFormSubmit`: à déclencher lors de la soumission du formulaire
-   - `onEditValidation`: à déclencher lors de la modification de la feuille
+### 1. Installation du Code
 
-### Configuration des déclencheurs
+1. Ouvrez votre feuille Google Sheets
+2. **Extensions** > **Apps Script**
+3. Supprimez le fichier `Code.gs` par défaut
+4. Créez **3 nouveaux fichiers** :
+   - `Config.gs` - Copiez le contenu de Config.gs
+   - `EmailService.gs` - Copiez le contenu de EmailService.gs
+   - `Main.gs` - Copiez le contenu de Main.gs
 
-Pour configurer les déclencheurs:
-1. Dans l'éditeur Apps Script, cliquez sur l'icône en forme d'horloge (⏰)
-2. Cliquez sur "+ Ajouter un déclencheur"
-3. Pour `onFormSubmit`:
-   - Sélectionnez "onFormSubmit" comme fonction à exécuter
-   - "Depuis la feuille de calcul" comme source d'événement
-   - "Lors de la soumission du formulaire" comme type d'événement
-4. Pour `onEditValidation`:
-   - Sélectionnez "onEditValidation" comme fonction à exécuter
-   - "Depuis la feuille de calcul" comme source d'événement
-   - "Lors de la modification" comme type d'événement
-5. Cliquez sur "Enregistrer" pour chaque déclencheur
+### 2. Configuration Initiale
 
-## Processus de validation
+1. **Remplissez** la configuration dans `Config.gs`
+2. **Personnalisez** les signatures dans `EmailService.gs`
+3. **Sauvegardez** tous les fichiers
 
-1. Un employé soumet une demande d'absence via le formulaire
-2. Le script crée un document basé sur le modèle et l'enregistre dans le dossier "En Attente"
-3. Le supérieur hiérarchique est notifié par email
-4. Lorsque le supérieur valide, le RH est notifié
-5. Lorsque le RH valide, la Présidence est notifiée
-6. Lorsque la Présidence valide, le demandeur est notifié de l'approbation finale
-7. Si un validateur rejette la demande, le processus s'arrête et le demandeur est notifié du rejet
+### 3. Initialisation du Système
 
-## Fonctions principales
+Exécutez **une seule fois** la fonction d'initialisation :
 
-- `onFormSubmit(e)`: Traite les nouvelles soumissions de formulaire
-- `onEditValidation(e)`: Gère les validations dans la feuille de calcul
-- `sendEmail(recipient, subject, body)`: Envoie des notifications par email
-- `handleValidation(role, statut, docId)`: Met à jour le statut dans le document
-- `notifyNextValidator(sheet, row, colonne, docId)`: Notifie le prochain validateur dans la chaîne
-- `handleRejection(sheet, row, role, docId)`: Gère le rejet d'une demande
-- `moveDocument(doc, sourceFolder, targetFolder)`: Déplace les documents entre les dossiers
-- `getOrCreateFolder(parentFolder, folderName)`: Crée ou récupère un dossier
-- `protectValidationCell(sheet, row, colonne)`: Protège une cellule après validation
-- `checkValidationCascade(sheet, row, colonne, statut)`: Vérifie que l'ordre de validation est respecté
-- `notifyRequestorRejection(sheet, row, role, docId)`: Notifie le demandeur en cas de rejet
-
-## Maintenance et débogage
-
-Le script inclut une journalisation détaillée via `Logger.log()` pour faciliter le débogage:
-- Données reçues du formulaire
-- Création et accès aux dossiers
-- Création et mise à jour des documents
-- Envoi d'emails
-- Erreurs rencontrées
-
-Vous pouvez consulter ces logs dans l'éditeur Apps Script via le menu "Exécution" > "Journaux d'exécution".
-
-### Résolution des problèmes courants
-
-1. **Emails non reçus**:
-   - Vérifiez que les adresses email sont correctement saisies
-   - Vérifiez les quotas d'envoi d'emails pour Google Apps Script
-
-2. **Erreurs de permission**:
-   - Vérifiez que le compte exécutant le script a accès à tous les dossiers et documents
-   - Vérifiez si des autorisations supplémentaires sont requises
-
-3. **Document non généré**:
-   - Vérifiez l'ID du document modèle
-   - Vérifiez les logs pour des erreurs spécifiques
-
-## Sécurité
-
-Le script inclut:
-- Protection des cellules de validation une fois les décisions prises
-- Validation de l'ordre de cascade (Supérieur → RH → Présidence)
-- Gestion des erreurs pour éviter les interruptions du script
-- Validation des données pour éviter les valeurs nulles ou indéfinies
-
-## Personnalisation avancée
-
-### Modification des statuts de validation
-Pour changer les libellés des statuts (actuellement "Favorable" et "Non Favorable"):
 ```javascript
-// Chercher dans le code où ces statuts sont définis ou utilisés
-// Par exemple dans handleValidation(), handleRejection(), etc.
+// Dans l'éditeur Apps Script, sélectionnez cette fonction et cliquez sur "Exécuter"
+initializeSystem();
 ```
 
-### Ajout d'un niveau de validation supplémentaire
-Nécessite des modifications dans:
-- La structure de la feuille
-- La fonction `checkValidationCascade()`
-- La fonction `notifyNextValidator()`
-- Le document modèle (ajout d'un nouveau placeholder)
+Cette fonction configure automatiquement :
+- ✅ Protection de la feuille (seules colonnes Q,R,S modifiables)
+- ✅ Triggers pour les événements (soumission formulaire, modification feuille)
+- ✅ Permissions et sécurité
 
-## Limitations connues
+### 4. Configuration des Triggers (Automatique)
 
-- Le script est limité par les quotas Apps Script (ex: emails par jour, temps d'exécution)
-- Les validations doivent être faites dans l'ordre séquentiel
-- Une fois une décision prise, elle ne peut plus être modifiée
+Les triggers sont créés automatiquement par `initializeSystem()` :
+- **onFormSubmit** : Traite les nouvelles demandes
+- **onEditValidation** : Gère les validations dans les colonnes Q,R,S
 
-## Informations de licence et crédits
+## 🔄 Processus de Validation
 
-Ce script est fourni tel quel, sans garantie. Vous êtes libre de l'adapter aux besoins spécifiques de votre organisation.
+```mermaid
+graph TD
+    A[Soumission Formulaire] --> B[Création Document]
+    B --> C[Notification Supérieur]
+    C --> D{Décision Supérieur}
+    D -->|Favorable| E[Notification RH]
+    D -->|Non Favorable| F[Notification Rejet]
+    E --> G{Décision RH}
+    G -->|Favorable| H[Notification Présidence]
+    G -->|Non Favorable| F
+    H --> I{Décision Présidence}
+    I -->|Favorable| J[Notification Approbation]
+    I -->|Non Favorable| F
+    F --> K[Document → Rejetée]
+    J --> L[Document → Validée]
+```
+
+## 📧 Types d'Emails Envoyés
+
+### Pour les Validateurs
+- **Sujet :** "Validation requise - Demande d'absence de [Nom]"
+- **Contenu :** Lien vers document + bouton "Décider"
+- **Signature :** Professionnelle avec coordonnées
+
+### Pour les Demandeurs
+- **Confirmation :** "Bonjour [Prénom], votre demande a été soumise"
+- **Approbation :** "Bonjour [Prénom], votre demande est approuvée"
+- **Rejet :** "Bonjour [Prénom], votre demande est refusée"
+
+## 🛡️ Sécurité et Protection
+
+### Protection de la Feuille
+- **Feuille entièrement protégée** sauf colonnes de validation
+- **Seules Q, R, S** modifiables par les utilisateurs
+- **Cellules protégées** après validation (pas de modification possible)
+
+### Validation en Cascade
+- **Ordre strict :** Supérieur → RH → Présidence
+- **Blocage automatique** si ordre non respecté
+- **Statuts autorisés :** "Favorable" ou "Non Favorable" uniquement
+
+### Métadonnées Sécurisées
+- **Colonnes U-Y cachées** contiennent les données système
+- **IDs documents**, emails, timestamps automatiques
+- **Invisible** pour les utilisateurs finaux
+
+## 🔍 Débogage et Maintenance
+
+### Logs Détaillés
+Consultez les logs via **Extensions** > **Apps Script** > **Exécutions** :
+- `[FORMULAIRE]` - Traitement des soumissions
+- `[EMAIL ENVOYÉ]` - Confirmations d'envoi
+- `[VALIDATION]` - Actions de validation
+- `[ERREUR]` - Problèmes rencontrés
+
+### Problèmes Courants
+
+| Problème | Solution |
+|----------|----------|
+| Emails non reçus | Vérifier CONFIG.emails et quotas Gmail |
+| Erreur permissions | Vérifier accès aux dossiers Google Drive |
+| Validation bloquée | Vérifier ordre : Supérieur → RH → Présidence |
+| Document non créé | Vérifier ID du template dans CONFIG |
+
+## 🎨 Personnalisation
+
+### Modifier les Messages d'Email
+Éditez la fonction `createProfessionalEmail()` dans **EmailService.gs**
+
+### Ajouter un Niveau de Validation
+1. Ajouter une colonne dans la feuille
+2. Modifier `checkValidationOrder()` dans **Main.gs**
+3. Mettre à jour `notifyNextValidator()` dans **EmailService.gs**
+
+### Changer les Statuts de Validation
+Rechercher "Favorable" et "Non Favorable" dans le code pour les remplacer
+
+## 📈 Limitations
+
+- **Quotas Google Apps Script** : 6 minutes d'exécution max, limite d'emails/jour
+- **Validation séquentielle** : Ordre strict obligatoire
+- **Décisions définitives** : Pas de modification après validation
+- **Un seul template** : Document modèle unique pour toutes les demandes
+
+## 🆕 Nouveautés de cette Version README(l 249)
+
+### ✅ Architecture Modulaire
+- Code séparé en 3 fichiers spécialisés
+- Maintenance facilitée pour développeurs
+
+### ✅ Emails Professionnels
+- Templates avec signatures personnalisables
+- Boutons d'action intégrés
+- Messages adaptés au contexte
+
+### ✅ Sécurité Renforcée
+- Protection ciblée de la feuille
+- Métadonnées invisibles
+- Validation stricte des données
+
+### ✅ Automatisation Complète
+- Configuration en une fois
+- Triggers automatiques
+- Pas d'intervention manuelle
+
+## 📞 Support
+
+Pour des modifications avancées ou du support, consultez :
+- **Logs d'exécution** dans Apps Script
+- **Documentation Google Apps Script**
+- **Code source commenté** pour comprendre la logique
+
+---
+
+*Système développé pour automatiser et sécuriser la gestion des absences avec Google Workspace.*
